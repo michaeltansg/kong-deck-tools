@@ -1,29 +1,28 @@
 #!/usr/bin/env python3
 """
 hydrate.py
-Renders a Kong template file by substituting certificate values from values file
-This reverses the templatize.py operation
+Renders a Kong template file by substituting certificate values from values file.
+This reverses the templatize operation.
 
-Usage: hydrate.py <template_file>
-Example: hydrate.py config.tmpl.yaml
+Usage: kong-hydrate <template_file>
+Example: kong-hydrate config.tmpl.yaml
 
-Uses ruamel.yaml for format preservation to ensure lossless round-trips
+Uses ruamel.yaml for format preservation to ensure lossless round-trips.
 """
 
+import re
 import sys
+from io import StringIO
 from pathlib import Path
 from ruamel.yaml import YAML
 
 
 def load_certificate_values(file_path):
-    """Load certificate values from values file"""
-    # The values file has multiple certificate entries without document separators
-    # We need to parse it by splitting on 'name:' occurrences
+    """Load certificate values from values file."""
     with open(file_path, 'r') as f:
         content = f.read()
 
     # Split by 'name:' but keep the delimiter
-    import re
     parts = re.split(r'(?=^name: )', content, flags=re.MULTILINE)
 
     yaml = YAML()
@@ -34,17 +33,17 @@ def load_certificate_values(file_path):
         part = part.strip()
         if part:
             try:
-                from io import StringIO
                 cert_doc = yaml.load(StringIO(part))
                 if cert_doc and 'name' in cert_doc:
                     certs.append(cert_doc)
-            except:
+            except Exception:
                 pass
 
     return certs
 
+
 def load_yaml(file_path):
-    """Load a single YAML document with format preservation"""
+    """Load a single YAML document with format preservation."""
     yaml = YAML()
     yaml.preserve_quotes = True
     yaml.default_flow_style = False
@@ -52,10 +51,11 @@ def load_yaml(file_path):
     with open(file_path, 'r') as f:
         return yaml.load(f)
 
+
 def main():
     if len(sys.argv) < 2:
-        print("Usage: hydrate.py <template_file>")
-        print("Example: hydrate.py config.tmpl.yaml")
+        print("Usage: kong-hydrate <template_file>")
+        print("Example: kong-hydrate config.tmpl.yaml")
         sys.exit(1)
 
     template_file = sys.argv[1]
@@ -79,7 +79,7 @@ def main():
         print(f"Error: Values file '{values_file}' not found")
         sys.exit(1)
 
-    print(f"Rendering Kong configuration...")
+    print("Rendering Kong configuration...")
     print(f"   Template: {template_file}")
     print(f"   Values:   {values_file}")
     print("")
@@ -110,8 +110,6 @@ def main():
                     key_value = cert_map[sni_name]['key']
 
                     # Ensure keys end with newline to match Kong's format
-                    # The values file stores keys without trailing newlines
-                    # We need to add one newline which becomes two when written with YAML literal block
                     if not key_value.endswith('\n'):
                         key_value = key_value + '\n'
 
@@ -128,9 +126,10 @@ def main():
         yaml.dump(template, f)
 
     print("")
-    print(f"Configuration rendered successfully!")
+    print("Configuration rendered successfully!")
     print(f"   Output: {output_file}")
     print("")
+
 
 if __name__ == '__main__':
     main()

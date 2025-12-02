@@ -1,12 +1,14 @@
 #!/usr/bin/env python3
 """
-process-config.py
-Splits Kong configuration into template and values files, then prettifies
-This creates diff-friendly, Helm-ready configuration files
+templatize.py
+Splits Kong configuration into template and values files, then prettifies.
+This creates diff-friendly, Helm-ready configuration files.
+
+Usage: kong-templatize <config_file>
+Example: kong-templatize config.yaml
 """
 
 import sys
-import os
 from pathlib import Path
 from ruamel.yaml import YAML
 from ruamel.yaml.comments import CommentedMap
@@ -155,15 +157,16 @@ def create_template(config):
 
 
 def main():
-    # Change to script directory
-    script_dir = Path(__file__).parent.resolve()
-    os.chdir(script_dir)
+    if len(sys.argv) < 2:
+        print("Usage: kong-templatize <config_file>")
+        print("Example: kong-templatize config.yaml")
+        sys.exit(1)
 
-    # Get input file
-    input_file = sys.argv[1] if len(sys.argv) > 1 else "kong_local.yml"
+    input_file = sys.argv[1]
 
     # Validate input file exists
-    if not Path(input_file).exists():
+    input_path = Path(input_file)
+    if not input_path.exists():
         print(f"Error: Input file '{input_file}' not found")
         sys.exit(1)
 
@@ -214,17 +217,6 @@ def main():
 
     # Step 3: Prettify the template file with key reordering
     print("Prettifying template structure...")
-    print("")
-
-    print("Reordering plugins...")
-    print("Reordering services...")
-    print("Reordering service-level plugins...")
-    print("Reordering routes...")
-    print("Reordering route-level plugins...")
-    print("Reordering upstreams...")
-    print("Reordering upstream targets...")
-    print("Reordering consumers (if any)...")
-
     template = prettify_config(template)
 
     # Write template file
@@ -237,10 +229,6 @@ def main():
     print("Files created:")
     print(f"   Template: {template_file}")
     print(f"   Values:   {values_file}")
-    print("")
-    print("The template file contains Helm placeholders for certificates")
-    print("Use the template for version control and diffs")
-    print("Use the values file to inject actual certificates at deployment time")
     print("")
 
 

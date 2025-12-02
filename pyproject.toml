@@ -1,0 +1,45 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "kong-deck-tools"
+version = "0.1.0"
+description = "Kong API Gateway configuration tools for certificate management and cross-environment comparison"
+readme = "README.md"
+license = {text = "MIT"}
+requires-python = ">=3.8"
+authors = [
+    {name = "Michael Tan"}
+]
+keywords = ["kong", "api-gateway", "deck", "configuration", "certificates"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Environment :: Console",
+    "Intended Audience :: Developers",
+    "Intended Audience :: System Administrators",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: System :: Systems Administration",
+    "Topic :: Utilities",
+]
+dependencies = [
+    "ruamel.yaml>=0.18.0",
+]
+
+[project.urls]
+Homepage = "https://github.com/michaeltan/kong-deck-tools"
+Repository = "https://github.com/michaeltan/kong-deck-tools"
+
+[project.scripts]
+kong-templatize = "kong_deck_tools.templatize:main"
+kong-hydrate = "kong_deck_tools.hydrate:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
