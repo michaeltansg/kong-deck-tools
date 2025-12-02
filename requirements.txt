@@ -1,0 +1,5 @@
+# Kong Configuration Management Dependencies
+# Install with: pip install -r requirements.txt
+
+# YAML processing with format preservation
+ruamel.yaml>=0.18.0
