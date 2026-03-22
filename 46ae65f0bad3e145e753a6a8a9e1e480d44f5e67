@@ -1,0 +1,29 @@
+CLAUDE.md
+  ed9641c5f7d08e9b 9,52-53,63,73,76-82,104-105
+src/kong_deck_tools/templatize.py
+  ed9641c5f7d08e9b 32-33,125-138,149-152,170-203,210-221,266-267,269,273-282,284
+src/kong_deck_tools/hydrate.py
+  ed9641c5f7d08e9b 25-26,32-33,38-44,48,97,108-121,139-162
+README.md
+  ed9641c5f7d08e9b 9,22,28,31-37,89-90
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.1.17",
+  "base_commit_sha": "46ae65f0bad3e145e753a6a8a9e1e480d44f5e67",
+  "prompts": {
+    "ed9641c5f7d08e9b": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "ec1be468-5b8a-4441-8152-40aad1ccbe07",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "Michael Tan <tan.michael@mac.com>",
+      "messages": [],
+      "total_additions": 171,
+      "total_deletions": 33,
+      "accepted_lines": 160,
+      "overriden_lines": 0
+    }
+  }
+}
