@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 This repository is a PyPI package (`kong-deck-tools`) that provides CLI tools for Kong API Gateway configuration management:
 
-1. **Extract certificates** from Kong configurations into separate files, allowing templates to be safely committed to git while keeping sensitive certificate data separate
+1. **Extract sensitive cryptographic material** (certificates, CA certificates, and keys) from Kong configurations into separate files, allowing templates to be safely committed to git while keeping sensitive data separate
 2. **Enforce consistent key ordering** across all configurations, making it easy to compare configurations across different environments (local, staging, production)
 
 ## Installation
@@ -49,6 +49,8 @@ kong-deck-tools/
 Kong configurations are YAML files with the following top-level sections:
 - `_format_version`: Kong declarative config format version (currently "3.0")
 - `certificates`: SSL/TLS certificates and private keys for securing API traffic
+- `ca_certificates`: CA certificates for mTLS and certificate verification
+- `keys`: Cryptographic keys (PEM or JWK) for signing and encryption
 - `plugins`: Global plugins that apply across all services
 - `services`: Backend services that Kong proxies to
 - `upstreams`: Load balancer configurations with health checks and targets
@@ -58,7 +60,7 @@ Kong configurations are YAML files with the following top-level sections:
 Services -> Routes -> Plugins (at service or route level)
 Upstreams -> Targets (backend servers with weights)
 
-## Certificate Management Workflow
+## Certificate & Key Management Workflow
 
 ### kong-templatize
 
@@ -68,11 +70,16 @@ Splits a Kong configuration into a template and a values file:
 kong-templatize config.yaml
 ```
 
-**Input:** `config.yaml` (full Kong configuration with certificates)
+**Input:** `config.yaml` (full Kong configuration with certificates and keys)
 
 **Output:**
-- `config.tmpl.yaml` - Template with Helm-style placeholders for certificates
-- `config.certs.values.yaml` - Extracted certificate values (name, cert, key)
+- `config.tmpl.yaml` - Template with Helm-style placeholders for sensitive data
+- `config.certs.values.yaml` - Extracted values (certificates, CA certificates, and keys)
+
+**Extracted fields:**
+- `certificates[].cert` and `certificates[].key` — keyed by SNI name
+- `ca_certificates[].cert` — keyed by ID
+- `keys[].pem.private_key`, `keys[].pem.public_key`, and `keys[].jwk` — keyed by kid
 
 ### kong-hydrate
 
@@ -94,6 +101,8 @@ The `kong-templatize` command enforces consistent key ordering:
 - **Routes**: name -> hosts -> paths -> protocols -> strip_path -> preserve_host -> ... -> plugins
 - **Upstreams**: name -> algorithm -> slots -> hash_* -> tags -> healthchecks -> targets
 - **Consumers**: username -> custom_id -> tags
+- **CA Certificates**: id -> cert -> cert_digest -> tags
+- **Keys**: name -> kid -> set -> pem -> jwk -> tags
 
 ---
 

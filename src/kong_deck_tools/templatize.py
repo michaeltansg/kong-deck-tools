@@ -29,6 +29,8 @@ UPSTREAM_KEY_ORDER = ['name', 'algorithm', 'slots', 'hash_on', 'hash_fallback',
 UPSTREAM_TRAILING_KEYS = ['healthchecks', 'targets']
 TARGET_KEY_ORDER = ['target', 'weight', 'tags']
 CONSUMER_KEY_ORDER = ['username', 'custom_id', 'tags']
+CA_CERTIFICATE_KEY_ORDER = ['id', 'cert', 'cert_digest', 'tags']
+KEY_KEY_ORDER = ['name', 'kid', 'set', 'pem', 'jwk', 'tags']
 
 
 def reorder_keys(obj, key_order, trailing_keys=None):
@@ -120,6 +122,20 @@ def reorder_consumers(consumers):
     return [reorder_keys(c, CONSUMER_KEY_ORDER) for c in consumers]
 
 
+def reorder_ca_certificates(ca_certificates):
+    """Reorder keys in CA certificate configurations."""
+    if not ca_certificates:
+        return ca_certificates
+    return [reorder_keys(c, CA_CERTIFICATE_KEY_ORDER) for c in ca_certificates]
+
+
+def reorder_keys_entities(keys):
+    """Reorder keys in key configurations."""
+    if not keys:
+        return keys
+    return [reorder_keys(k, KEY_KEY_ORDER) for k in keys]
+
+
 def prettify_config(config):
     """Prettify the entire configuration by reordering keys."""
     if 'plugins' in config:
@@ -130,6 +146,10 @@ def prettify_config(config):
         config['upstreams'] = reorder_upstreams(config['upstreams'])
     if 'consumers' in config:
         config['consumers'] = reorder_consumers(config['consumers'])
+    if 'ca_certificates' in config:
+        config['ca_certificates'] = reorder_ca_certificates(config['ca_certificates'])
+    if 'keys' in config:
+        config['keys'] = reorder_keys_entities(config['keys'])
     return config
 
 
@@ -147,12 +167,58 @@ def extract_certificates(config):
     return certs
 
 
+def extract_ca_certificates(config):
+    """Extract CA certificates from config into a list of CA certificate values."""
+    ca_certs = []
+    if 'ca_certificates' in config and config['ca_certificates']:
+        for ca_cert in config['ca_certificates']:
+            if 'id' in ca_cert:
+                ca_cert_entry = CommentedMap()
+                ca_cert_entry['id'] = ca_cert['id']
+                ca_cert_entry['cert'] = ca_cert.get('cert', '')
+                ca_certs.append(ca_cert_entry)
+    return ca_certs
+
+
+def extract_keys(config):
+    """Extract keys from config into a list of key values."""
+    keys = []
+    if 'keys' in config and config['keys']:
+        for key in config['keys']:
+            if 'kid' in key:
+                key_entry = CommentedMap()
+                key_entry['kid'] = key['kid']
+                if 'pem' in key and key['pem']:
+                    pem_entry = CommentedMap()
+                    if 'private_key' in key['pem']:
+                        pem_entry['private_key'] = key['pem']['private_key']
+                    if 'public_key' in key['pem']:
+                        pem_entry['public_key'] = key['pem']['public_key']
+                    key_entry['pem'] = pem_entry
+                if 'jwk' in key:
+                    key_entry['jwk'] = key['jwk']
+                keys.append(key_entry)
+    return keys
+
+
 def create_template(config):
     """Create template by replacing certificate values with Helm placeholders."""
     if 'certificates' in config and config['certificates']:
         for cert in config['certificates']:
             cert['cert'] = "{{ .Values.certificates[.snis[0].name].cert }}"
             cert['key'] = "{{ .Values.certificates[.snis[0].name].key }}"
+    if 'ca_certificates' in config and config['ca_certificates']:
+        for ca_cert in config['ca_certificates']:
+            ca_cert['cert'] = "{{ .Values.ca_certificates[.id].cert }}"
+    if 'keys' in config and config['keys']:
+        for key in config['keys']:
+            if 'pem' in key and key['pem']:
+                if 'private_key' in key['pem']:
+                    key['pem']['private_key'] = "{{ .Values.keys[.kid].pem.private_key }}"
+                if 'public_key' in key['pem']:
+                    key['pem']['public_key'] = "{{ .Values.keys[.kid].pem.public_key }}"
+            if 'jwk' in key:
+                key['jwk'] = "{{ .Values.keys[.kid].jwk }}"
     return config
 
 
@@ -197,14 +263,25 @@ def main():
     # Step 1: Extract certificates to values file
     print("Extracting certificates to values file...")
     certs = extract_certificates(config)
+    ca_certs = extract_ca_certificates(config)
+    keys = extract_keys(config)
 
-    if certs:
+    if certs or ca_certs or keys:
         with open(values_file, 'w') as f:
             for cert in certs:
                 yaml.dump(cert, f)
-        print(f"   Certificates extracted to: {values_file}")
+            for ca_cert in ca_certs:
+                yaml.dump(ca_cert, f)
+            for key in keys:
+                yaml.dump(key, f)
+        if certs:
+            print(f"   Certificates extracted to: {values_file}")
+        if ca_certs:
+            print(f"   CA certificates extracted to: {values_file}")
+        if keys:
+            print(f"   Keys extracted to: {values_file}")
     else:
-        print("   No certificates found or extraction failed")
+        print("   No certificates or keys found")
         # Create empty values file
         with open(values_file, 'w') as f:
             pass

@@ -6,7 +6,7 @@ Kong API Gateway configuration tools for certificate management and cross-enviro
 
 This package provides CLI tools for managing Kong API Gateway configurations:
 
-1. **Extract certificates** from Kong configurations into separate files, allowing templates to be safely committed to git while keeping sensitive certificate data separate
+1. **Extract sensitive cryptographic material** (certificates, CA certificates, and keys) from Kong configurations into separate files, allowing templates to be safely committed to git while keeping sensitive data separate
 2. **Enforce consistent key ordering** across all configurations, making it easy to compare configurations across different environments (local, staging, production)
 
 ## Installation
@@ -19,17 +19,22 @@ pip install kong-deck-tools
 
 ### kong-templatize
 
-Splits a Kong configuration into a template and a certificate values file:
+Splits a Kong configuration into a template and a values file:
 
 ```bash
 kong-templatize config.yaml
 ```
 
-**Input:** `config.yaml` (full Kong configuration with certificates)
+**Input:** `config.yaml` (full Kong configuration with certificates and keys)
 
 **Output:**
-- `config.tmpl.yaml` - Template with Helm-style placeholders for certificates
-- `config.certs.values.yaml` - Extracted certificate values (name, cert, key)
+- `config.tmpl.yaml` - Template with Helm-style placeholders for sensitive data
+- `config.certs.values.yaml` - Extracted values (certificates, CA certificates, and keys)
+
+Extracts the following sensitive fields:
+- `certificates[].cert` and `certificates[].key` — keyed by SNI name
+- `ca_certificates[].cert` — keyed by ID
+- `keys[].pem.private_key`, `keys[].pem.public_key`, and `keys[].jwk` — keyed by kid
 
 The script also prettifies the template by reordering YAML keys for consistency and readability.
 
@@ -81,6 +86,8 @@ Key ordering by entity type:
 - **Routes**: name -> hosts -> paths -> protocols -> strip_path -> preserve_host -> ... -> plugins
 - **Upstreams**: name -> algorithm -> slots -> hash_* -> tags -> healthchecks -> targets
 - **Consumers**: username -> custom_id -> tags
+- **CA Certificates**: id -> cert -> cert_digest -> tags
+- **Keys**: name -> kid -> set -> pem -> jwk -> tags
 
 ## Requirements
 

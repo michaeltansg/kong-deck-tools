@@ -22,24 +22,30 @@ def load_certificate_values(file_path):
     with open(file_path, 'r') as f:
         content = f.read()
 
-    # Split by 'name:' but keep the delimiter
-    parts = re.split(r'(?=^name: )', content, flags=re.MULTILINE)
+    # Split by 'name:', 'id:', or 'kid:' but keep the delimiter
+    parts = re.split(r'(?=^(?:name|id|kid): )', content, flags=re.MULTILINE)
 
     yaml = YAML()
     yaml.preserve_quotes = True
 
     certs = []
+    ca_certs = []
+    keys = []
     for part in parts:
         part = part.strip()
         if part:
             try:
-                cert_doc = yaml.load(StringIO(part))
-                if cert_doc and 'name' in cert_doc:
-                    certs.append(cert_doc)
+                doc = yaml.load(StringIO(part))
+                if doc and 'kid' in doc:
+                    keys.append(doc)
+                elif doc and 'name' in doc:
+                    certs.append(doc)
+                elif doc and 'id' in doc:
+                    ca_certs.append(doc)
             except Exception:
                 pass
 
-    return certs
+    return certs, ca_certs, keys
 
 
 def load_yaml(file_path):
@@ -88,7 +94,7 @@ def main():
     template = load_yaml(template_file)
 
     # Load certificate values
-    cert_values = load_certificate_values(values_file)
+    cert_values, ca_cert_values, key_values = load_certificate_values(values_file)
 
     # Create a mapping of SNI name to certificate data
     cert_map = {}
@@ -98,6 +104,20 @@ def main():
                 'cert': cert_doc.get('cert', ''),
                 'key': cert_doc.get('key', '')
             }
+
+    # Create a mapping of ID to CA certificate data
+    ca_cert_map = {}
+    for ca_cert_doc in ca_cert_values:
+        if ca_cert_doc and 'id' in ca_cert_doc:
+            ca_cert_map[ca_cert_doc['id']] = {
+                'cert': ca_cert_doc.get('cert', '')
+            }
+
+    # Create a mapping of kid to key data
+    key_map = {}
+    for key_doc in key_values:
+        if key_doc and 'kid' in key_doc:
+            key_map[key_doc['kid']] = key_doc
 
     # Substitute certificates in template
     if 'certificates' in template:
@@ -115,6 +135,31 @@ def main():
 
                     cert['cert'] = cert_value
                     cert['key'] = key_value
+
+    # Substitute CA certificates in template
+    if 'ca_certificates' in template:
+        for ca_cert in template['ca_certificates']:
+            if 'id' in ca_cert:
+                ca_id = ca_cert['id']
+                if ca_id in ca_cert_map:
+                    print(f"   Substituting CA certificate for: {ca_id}")
+                    ca_cert['cert'] = ca_cert_map[ca_id]['cert']
+
+    # Substitute keys in template
+    if 'keys' in template:
+        for key in template['keys']:
+            if 'kid' in key:
+                kid = key['kid']
+                if kid in key_map:
+                    print(f"   Substituting key for: {kid}")
+                    key_doc = key_map[kid]
+                    if 'pem' in key and 'pem' in key_doc:
+                        if 'private_key' in key['pem'] and 'private_key' in key_doc['pem']:
+                            key['pem']['private_key'] = key_doc['pem']['private_key']
+                        if 'public_key' in key['pem'] and 'public_key' in key_doc['pem']:
+                            key['pem']['public_key'] = key_doc['pem']['public_key']
+                    if 'jwk' in key and 'jwk' in key_doc:
+                        key['jwk'] = key_doc['jwk']
 
     # Write rendered output with format preservation
     yaml = YAML()
