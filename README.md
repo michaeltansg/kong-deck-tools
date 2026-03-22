@@ -110,12 +110,11 @@ pip install -e .
 # Install uv (if not already installed)
 brew install uv
 
-# Build the package
-uv build
-
-# Upload to PyPI
-uv publish
+# Clean previous build artifacts, rebuild, and publish
+rm -rf dist/ && uv build && uv publish --token $PYPI_TOKEN
 ```
+
+To get a PyPI API token, visit https://pypi.org/manage/account/token/
 
 ## License
 
