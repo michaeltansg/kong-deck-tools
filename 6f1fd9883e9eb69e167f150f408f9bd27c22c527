@@ -1,0 +1,25 @@
+pyproject.toml
+  752899a2e7a3ddd2 7,10
+README.md
+  752899a2e7a3ddd2 113-114,117
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.1.17",
+  "base_commit_sha": "6f1fd9883e9eb69e167f150f408f9bd27c22c527",
+  "prompts": {
+    "752899a2e7a3ddd2": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "e9e8a364-1255-4abf-bb14-f218db085087",
+        "model": "claude-opus-4-6"
+      },
+      "human_author": "Michael Tan <tan.michael@mac.com>",
+      "messages": [],
+      "total_additions": 6,
+      "total_deletions": 8,
+      "accepted_lines": 6,
+      "overriden_lines": 0
+    }
+  }
+}
